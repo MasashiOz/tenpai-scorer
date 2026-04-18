@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { SituationState, PlayerPosition, RoundWind, SeatWind, MAX_DORA_INDICATORS, MAX_URA_DORA_INDICATORS, MAX_HONBA } from '@/types/situation';
+import { SituationState, PlayerPosition, RoundWind, SeatWind, GameMode, MAX_DORA_INDICATORS, MAX_URA_DORA_INDICATORS, MAX_HONBA, MAX_NUKIDORI } from '@/types/situation';
 import { ALL_TILES, TILE_LABELS, TILE_SVG } from '@/data/tiles';
 import { buildDoraInfoList } from '@/lib/dora';
 import { TileButton } from './TileButton';
@@ -9,6 +9,7 @@ import { Tile } from '@/types/tile';
 
 interface SituationPanelProps {
   situation: SituationState;
+  onGameModeChange: (mode: GameMode) => void;
   onPlayerPositionChange: (pos: PlayerPosition) => void;
   onRoundWindChange: (wind: RoundWind) => void;
   onSeatWindChange: (wind: SeatWind) => void;
@@ -24,6 +25,7 @@ interface SituationPanelProps {
   onAddUraDoraIndicator: (tileId: string) => { success: boolean; reason?: string };
   onRemoveUraDoraIndicator: (index: number) => void;
   onHonbaChange: (honba: number) => void;
+  onNukidoriCountChange: (count: number) => void;
   onReset: () => void;
   // Sprint 7: 副露ありかどうか（リーチを無効化するため）
   isOpen?: boolean;
@@ -34,15 +36,22 @@ const ROUND_WIND_OPTIONS: { value: RoundWind; label: string }[] = [
   { value: 'south', label: '南場' },
 ];
 
-const SEAT_WIND_OPTIONS: { value: SeatWind; label: string }[] = [
+const SEAT_WIND_OPTIONS_4P: { value: SeatWind; label: string }[] = [
   { value: 'east', label: '東家' },
   { value: 'south', label: '南家' },
   { value: 'west', label: '西家' },
   { value: 'north', label: '北家' },
 ];
 
+const SEAT_WIND_OPTIONS_3P: { value: SeatWind; label: string }[] = [
+  { value: 'east', label: '東家' },
+  { value: 'south', label: '南家' },
+  { value: 'west', label: '西家' },
+];
+
 export const SituationPanel: React.FC<SituationPanelProps> = ({
   situation,
+  onGameModeChange,
   onPlayerPositionChange,
   onRoundWindChange,
   onSeatWindChange,
@@ -56,6 +65,7 @@ export const SituationPanel: React.FC<SituationPanelProps> = ({
   onAddUraDoraIndicator,
   onRemoveUraDoraIndicator,
   onHonbaChange,
+  onNukidoriCountChange,
   onReset,
   isOpen = false,
 }) => {
@@ -68,6 +78,8 @@ export const SituationPanel: React.FC<SituationPanelProps> = ({
   const uraDoraInfoList = buildDoraInfoList(situation.uraDoraIndicators);
   const canAddDora = situation.doraIndicators.length < MAX_DORA_INDICATORS;
   const canAddUraDora = situation.uraDoraIndicators.length < MAX_URA_DORA_INDICATORS;
+  const is3P = situation.gameMode === '3p';
+  const seatWindOptions = is3P ? SEAT_WIND_OPTIONS_3P : SEAT_WIND_OPTIONS_4P;
 
   const handleDoraIndicatorClick = (tileId: string) => {
     const result = onAddDoraIndicator(tileId);
@@ -97,6 +109,29 @@ export const SituationPanel: React.FC<SituationPanelProps> = ({
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+      {/* ゲームモードタブ */}
+      <div className="flex items-center gap-1 mb-4 p-1 bg-gray-100 rounded-lg">
+        {(['4p', '3p'] as GameMode[]).map((mode) => {
+          const isActive = situation.gameMode === mode;
+          const label = mode === '4p' ? '4人麻雀' : '三人麻雀';
+          return (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => onGameModeChange(mode)}
+              className={`
+                flex-1 py-1.5 rounded-md text-sm font-semibold transition-all
+                ${isActive
+                  ? 'bg-white text-gray-800 shadow-sm border border-gray-200'
+                  : 'text-gray-500 hover:text-gray-700'}
+              `}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* ヘッダー行 */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-semibold text-gray-600">状況設定</h2>
@@ -109,36 +144,76 @@ export const SituationPanel: React.FC<SituationPanelProps> = ({
         </button>
       </div>
 
-      {/* 本場 */}
-      <div className="mb-4">
-        <div className="text-xs text-gray-500 mb-1.5 font-medium">本場</div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => onHonbaChange(situation.honba - 1)}
-            disabled={situation.honba <= 0}
-            className="w-8 h-8 rounded-lg border-2 border-gray-300 text-gray-600 font-bold text-lg flex items-center justify-center hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          >
-            −
-          </button>
-          <span className="w-10 text-center font-bold text-lg text-gray-800">
-            {situation.honba}
-          </span>
-          <button
-            type="button"
-            onClick={() => onHonbaChange(situation.honba + 1)}
-            disabled={situation.honba >= MAX_HONBA}
-            className="w-8 h-8 rounded-lg border-2 border-gray-300 text-gray-600 font-bold text-lg flex items-center justify-center hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          >
-            ＋
-          </button>
-          <span className="text-xs text-gray-400">（0〜{MAX_HONBA}本場）</span>
-          {situation.honba > 0 && (
-            <span className="text-xs text-amber-600 font-medium">
-              +{situation.honba * 300}点
+      {/* 本場 + 抜き北（三人麻雀） */}
+      <div className={`mb-4 flex flex-wrap gap-x-6 gap-y-3`}>
+        {/* 本場 */}
+        <div>
+          <div className="text-xs text-gray-500 mb-1.5 font-medium">本場</div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onHonbaChange(situation.honba - 1)}
+              disabled={situation.honba <= 0}
+              className="w-8 h-8 rounded-lg border-2 border-gray-300 text-gray-600 font-bold text-lg flex items-center justify-center hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              −
+            </button>
+            <span className="w-10 text-center font-bold text-lg text-gray-800">
+              {situation.honba}
             </span>
-          )}
+            <button
+              type="button"
+              onClick={() => onHonbaChange(situation.honba + 1)}
+              disabled={situation.honba >= MAX_HONBA}
+              className="w-8 h-8 rounded-lg border-2 border-gray-300 text-gray-600 font-bold text-lg flex items-center justify-center hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              ＋
+            </button>
+            <span className="text-xs text-gray-400">（0〜{MAX_HONBA}）</span>
+            {situation.honba > 0 && (
+              <span className="text-xs text-amber-600 font-medium">
+                +{situation.honba * 300}点
+              </span>
+            )}
+          </div>
         </div>
+
+        {/* 抜き北（三人麻雀のみ） */}
+        {is3P && (
+          <div>
+            <div className="text-xs text-gray-500 mb-1.5 font-medium">
+              抜き北
+              <span className="ml-1 text-gray-400">（各1翻）</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onNukidoriCountChange((situation.nukidoriCount ?? 0) - 1)}
+                disabled={(situation.nukidoriCount ?? 0) <= 0}
+                className="w-8 h-8 rounded-lg border-2 border-gray-300 text-gray-600 font-bold text-lg flex items-center justify-center hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                −
+              </button>
+              <span className="w-8 text-center font-bold text-lg text-gray-800">
+                {situation.nukidoriCount ?? 0}
+              </span>
+              <button
+                type="button"
+                onClick={() => onNukidoriCountChange((situation.nukidoriCount ?? 0) + 1)}
+                disabled={(situation.nukidoriCount ?? 0) >= MAX_NUKIDORI}
+                className="w-8 h-8 rounded-lg border-2 border-gray-300 text-gray-600 font-bold text-lg flex items-center justify-center hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                ＋
+              </button>
+              <span className="text-xs text-gray-400">（0〜{MAX_NUKIDORI}）</span>
+              {(situation.nukidoriCount ?? 0) > 0 && (
+                <span className="text-xs text-emerald-600 font-medium">
+                  +{situation.nukidoriCount}翻
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -205,7 +280,7 @@ export const SituationPanel: React.FC<SituationPanelProps> = ({
           <div>
             <div className="text-xs text-gray-500 mb-1.5 font-medium">自風</div>
             <div className="flex gap-1.5 flex-wrap">
-              {SEAT_WIND_OPTIONS.map(({ value, label }) => {
+              {seatWindOptions.map(({ value, label }) => {
                 const isActive = situation.seatWind === value;
                 return (
                   <button

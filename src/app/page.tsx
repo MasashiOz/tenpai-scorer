@@ -32,6 +32,7 @@ export default function Home() {
   const { hand, addTile, removeTile, clearHand, getTileCount, canAddTile } = useHand(totalMeldTileCount);
   const {
     situation,
+    setGameMode,
     setPlayerPosition,
     setRoundWind,
     setSeatWind,
@@ -45,6 +46,7 @@ export default function Home() {
     addUraDoraIndicator,
     removeUraDoraIndicator,
     setHonba,
+    setNukidoriCount,
     resetSituation,
   } = useSituation();
 
@@ -127,6 +129,7 @@ export default function Home() {
         {/* 状況設定パネル */}
         <SituationPanel
           situation={situation}
+          onGameModeChange={setGameMode}
           onPlayerPositionChange={setPlayerPosition}
           onRoundWindChange={setRoundWind}
           onSeatWindChange={setSeatWind}
@@ -140,6 +143,7 @@ export default function Home() {
           onAddUraDoraIndicator={addUraDoraIndicator}
           onRemoveUraDoraIndicator={removeUraDoraIndicator}
           onHonbaChange={setHonba}
+          onNukidoriCountChange={setNukidoriCount}
           onReset={resetSituation}
           isOpen={isOpen}
         />
@@ -166,6 +170,7 @@ export default function Home() {
           onTileClick={handleTileClick}
           getTileCount={getTileCount}
           canAddTile={canAddTile}
+          is3P={situation.gameMode === '3p'}
         />
 
         {/* 聴牌判定パネル */}

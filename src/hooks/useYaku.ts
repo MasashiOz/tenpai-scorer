@@ -102,7 +102,7 @@ function countUraDoraHan(tileIds: string[], uraDoraIndicators: string[], isRiich
  * ドラ役を Yaku[] として生成する。
  * Sprint 8: dora/uradora/akadora の YakuName を使用
  */
-function buildDoraYaku(doraHan: number, uraDoraHan: number, akaDoraHan: number = 0): Yaku[] {
+function buildDoraYaku(doraHan: number, uraDoraHan: number, akaDoraHan: number = 0, nukidoriHan: number = 0): Yaku[] {
   const result: Yaku[] = [];
   if (doraHan > 0) {
     result.push({
@@ -126,6 +126,14 @@ function buildDoraYaku(doraHan: number, uraDoraHan: number, akaDoraHan: number =
       label: `赤ドラ${akaDoraHan}`,
       han: akaDoraHan,
       hanOpen: akaDoraHan,
+    });
+  }
+  if (nukidoriHan > 0) {
+    result.push({
+      name: 'dora', // 抜き北はドラ扱いで既存の name を流用
+      label: `抜き北${nukidoriHan}`,
+      han: nukidoriHan,
+      hanOpen: nukidoriHan,
     });
   }
   return result;
@@ -153,6 +161,9 @@ export function useYaku(
 
     const handTileIds = hand.map((t) => t.id);
     const isDealer = situation.playerPosition === 'dealer';
+    const playerCount = situation.gameMode === '3p' ? 3 : 4;
+    // 三人麻雀: 抜き北の翻数
+    const nukidoriHan = situation.gameMode === '3p' ? (situation.nukidoriCount ?? 0) : 0;
 
     // 副露面子を Mentsu 型に変換
     const fixedMentsu = meldsToMentsu(melds);
@@ -167,12 +178,12 @@ export function useYaku(
       // ドラカウント用: 副露牌も含む全手牌
       const allAgariTileIds = [...agariHand, ...melds.flatMap((m) => m.tiles)];
 
-      // Sprint 8: ドラ翻数計算（通常ドラ + 赤ドラ）
+      // Sprint 8: ドラ翻数計算（通常ドラ + 赤ドラ + 抜き北）
       const doraHan = countDoraHan(allAgariTileIds, situation.doraIndicators);
       const uraDoraHan = countUraDoraHan(allAgariTileIds, situation.uraDoraIndicators, situation.isRiichi);
       const akaDoraHan = countAkaDoraHan(allAgariTileIds); // Sprint 8: 赤ドラ
-      const doraYaku = buildDoraYaku(doraHan, uraDoraHan, akaDoraHan);
-      const doraTotalHan = doraHan + uraDoraHan + akaDoraHan;
+      const doraYaku = buildDoraYaku(doraHan, uraDoraHan, akaDoraHan, nukidoriHan);
+      const doraTotalHan = doraHan + uraDoraHan + akaDoraHan + nukidoriHan;
 
       // 副露があればリーチ・一発は無効
       const effectiveRiichi = hasOpenMeld ? false : situation.isRiichi;
@@ -225,7 +236,7 @@ export function useYaku(
         ctx: YakuContext,
         isTsumoFlag: boolean,
       ): AgariInfo => {
-        const score = calcYakumanScore(yakumanResult!, isDealer, isTsumoFlag, honba);
+        const score = calcYakumanScore(yakumanResult!, isDealer, isTsumoFlag, honba, playerCount);
         // 役満用ダミーYakuResult（役名表示に使う）
         const dummyYakuResult: YakuResult = {
           yaku: [],
@@ -296,9 +307,9 @@ export function useYaku(
       const tsumoFu = calcFu(tsumoYakuWithDora, tsumoCtx);
       const rinshankFu = calcFu(rinshankYakuWithDora, rinshankCtx);
 
-      const ronScore = calcScore(ronYakuWithDora.totalHan, ronFu, isDealer, false, honba);
-      const tsumoScore = calcScore(tsumoYakuWithDora.totalHan, tsumoFu, isDealer, true, honba);
-      const rinshankScore = calcScore(rinshankYakuWithDora.totalHan, rinshankFu, isDealer, true, honba);
+      const ronScore = calcScore(ronYakuWithDora.totalHan, ronFu, isDealer, false, honba, playerCount);
+      const tsumoScore = calcScore(tsumoYakuWithDora.totalHan, tsumoFu, isDealer, true, honba, playerCount);
+      const rinshankScore = calcScore(rinshankYakuWithDora.totalHan, rinshankFu, isDealer, true, honba, playerCount);
 
       return {
         tileId: waitTileId,

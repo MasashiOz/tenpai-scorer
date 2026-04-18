@@ -175,11 +175,12 @@ function applyHonba(
 /**
  * 点数算出のメイン関数
  *
- * @param han      翻数
- * @param fuResult 符計算結果
- * @param isDealer 親かどうか
- * @param isTsumo  ツモアガリかどうか
- * @param honba    本場数（デフォルト0）
+ * @param han         翻数
+ * @param fuResult    符計算結果
+ * @param isDealer    親かどうか
+ * @param isTsumo     ツモアガリかどうか
+ * @param honba       本場数（デフォルト0）
+ * @param playerCount プレイヤー人数（4人麻雀=4, 三人麻雀=3, デフォルト4）
  * @returns ScoreResult
  */
 export function calcScore(
@@ -188,9 +189,12 @@ export function calcScore(
   isDealer: boolean,
   isTsumo: boolean,
   honba: number = 0,
+  playerCount: number = 4,
 ): ScoreResult {
   const fu = fuResult.fu;
   const level = determineLevel(han, fu);
+  // ツモ時: 親ツモで支払う子の人数、子ツモで支払う他子の人数
+  const numOtherNonDealers = playerCount - 2; // 4P=2, 3P=1
 
   if (level !== 'normal') {
     // 固定点数
@@ -211,9 +215,10 @@ export function calcScore(
 
     if (isTsumo) {
       if (isDealer) {
-        // 親ツモ: 子全員が同額支払い
+        // 親ツモ: 子全員が同額支払い（1人あたりの支払い額は4人基準固定）
         const payEach = fixedData.dealer / 3;
-        const total = fixedData.dealer;
+        const numChildren = playerCount - 1;
+        const total = payEach * numChildren;
         const base: ScoreResult = {
           total,
           payments: [{ label: '子 各', amount: payEach }],
@@ -227,7 +232,7 @@ export function calcScore(
         // 子ツモ: 親と子で支払い額が異なる
         const dealerPays = fixedData.nonDealerTsumo.dealer;
         const nonDealerPays = fixedData.nonDealerTsumo.nonDealer;
-        const total = dealerPays + nonDealerPays * 2;
+        const total = dealerPays + nonDealerPays * numOtherNonDealers;
         const base: ScoreResult = {
           total,
           payments: [
@@ -263,7 +268,8 @@ export function calcScore(
     if (isDealer) {
       // 親ツモ: 子全員が 基本点×2 (100点切り上げ)
       const payEach = roundUp100(basePoints * 2);
-      const total = payEach * 3;
+      const numChildren = playerCount - 1;
+      const total = payEach * numChildren;
       const base: ScoreResult = {
         total,
         payments: [{ label: '子 各', amount: payEach }],
@@ -277,7 +283,7 @@ export function calcScore(
       // 子ツモ: 親は 基本点×2 (100点切り上げ), 子は 基本点×1 (100点切り上げ)
       const dealerPays = roundUp100(basePoints * 2);
       const nonDealerPays = roundUp100(basePoints);
-      const total = dealerPays + nonDealerPays * 2;
+      const total = dealerPays + nonDealerPays * numOtherNonDealers;
       const base: ScoreResult = {
         total,
         payments: [
@@ -331,6 +337,7 @@ export function calcScore(
  * @param isDealer      親かどうか
  * @param isTsumo       ツモアガリかどうか
  * @param honba         本場数（デフォルト0）
+ * @param playerCount   プレイヤー人数（4人麻雀=4, 三人麻雀=3, デフォルト4）
  * @returns ScoreResult
  */
 export function calcYakumanScore(
@@ -338,6 +345,7 @@ export function calcYakumanScore(
   isDealer: boolean,
   isTsumo: boolean,
   honba: number = 0,
+  playerCount: number = 4,
 ): ScoreResult {
   const multiplier = yakumanResult.totalMultiplier;
 
@@ -352,12 +360,14 @@ export function calcYakumanScore(
 
   const labelParts = yakumanResult.entries.map((e) => e.label).join('・');
   const multiplierLabel = multiplier >= 2 ? `${multiplier}倍役満` : '役満';
+  const numOtherNonDealers = playerCount - 2;
 
   let base: ScoreResult;
   if (isTsumo) {
     if (isDealer) {
       const payEach = fixedData.dealer / 3;
-      const total = fixedData.dealer;
+      const numChildren = playerCount - 1;
+      const total = payEach * numChildren;
       base = {
         total,
         payments: [{ label: '子 各', amount: payEach }],
@@ -369,7 +379,7 @@ export function calcYakumanScore(
     } else {
       const dealerPays = fixedData.nonDealerTsumo.dealer;
       const nonDealerPays = fixedData.nonDealerTsumo.nonDealer;
-      const total = dealerPays + nonDealerPays * 2;
+      const total = dealerPays + nonDealerPays * numOtherNonDealers;
       base = {
         total,
         payments: [

@@ -9,6 +9,8 @@ interface TilePaletteProps {
   onTileClick: (tileId: string, suit: string, number: number) => void;
   getTileCount: (tileId: string) => number;
   canAddTile: (tileId: string) => boolean;
+  /** 三人麻雀モードの場合 true（萬子2-8を薄表示） */
+  is3P?: boolean;
 }
 
 const SUIT_ORDER: Suit[] = ['man', 'pin', 'sou', 'wind', 'dragon'];
@@ -17,7 +19,11 @@ export const TilePalette: React.FC<TilePaletteProps> = ({
   onTileClick,
   getTileCount,
   canAddTile,
+  is3P = false,
 }) => {
+  // 三人麻雀では萬子2-8は通常使用しない（薄表示）
+  const isUnused3P = (tileId: string) =>
+    is3P && tileId.startsWith('man') && ['man2','man3','man4','man5','man6','man7','man8'].includes(tileId);
   const tilesBySuit = SUIT_ORDER.reduce<Record<Suit, typeof ALL_TILES>>(
     (acc, suit) => {
       acc[suit] = ALL_TILES.filter((t) => t.suit === suit);
@@ -32,13 +38,19 @@ export const TilePalette: React.FC<TilePaletteProps> = ({
       <div className="space-y-3">
         {SUIT_ORDER.map((suit) => (
           <div key={suit}>
-            <div className="text-xs text-gray-400 mb-1">{SUIT_LABELS[suit]}</div>
+            <div className="text-xs text-gray-400 mb-1">
+              {SUIT_LABELS[suit]}
+              {is3P && suit === 'man' && (
+                <span className="ml-1 text-gray-300">（2〜8は三人麻雀では不使用）</span>
+              )}
+            </div>
             <div className="flex flex-wrap gap-1">
               {tilesBySuit[suit].map((tile) => {
                 const count = getTileCount(tile.id);
                 const disabled = !canAddTile(tile.id);
+                const unused = isUnused3P(tile.id);
                 return (
-                  <div key={tile.id} className="relative">
+                  <div key={tile.id} className={`relative ${unused ? 'opacity-30' : ''}`}>
                     <TileButton
                       tile={tile}
                       onClick={() => onTileClick(tile.id, tile.suit, tile.number)}

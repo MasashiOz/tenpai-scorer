@@ -7,15 +7,18 @@ import {
   RoundWind,
   SeatWind,
   DoraIndicator,
+  GameMode,
   DEFAULT_SITUATION,
   MAX_DORA_INDICATORS,
   MAX_URA_DORA_INDICATORS,
   MAX_HONBA,
+  MAX_NUKIDORI,
 } from '@/types/situation';
 import { useLocalStorage } from './useLocalStorage';
 
 export interface UseSituationReturn {
   situation: SituationState;
+  setGameMode: (mode: GameMode) => void;
   setPlayerPosition: (pos: PlayerPosition) => void;
   setRoundWind: (wind: RoundWind) => void;
   setSeatWind: (wind: SeatWind) => void;
@@ -32,6 +35,8 @@ export interface UseSituationReturn {
   removeUraDoraIndicator: (index: number) => void;
   // 本場
   setHonba: (honba: number) => void;
+  // 三人麻雀: 抜き北
+  setNukidoriCount: (count: number) => void;
   resetSituation: () => void;
 }
 
@@ -41,6 +46,17 @@ export function useSituation(): UseSituationReturn {
     'tenpai-scorer-situation',
     DEFAULT_SITUATION,
   );
+
+  const setGameMode = useCallback((mode: GameMode) => {
+    setSituation((prev) => ({
+      ...prev,
+      gameMode: mode,
+      // 三人麻雀に切り替えた際、北家なら東家にリセット
+      seatWind: mode === '3p' && prev.seatWind === 'north' ? 'east' : prev.seatWind,
+      // 三人麻雀以外に戻したら抜き北をクリア
+      nukidoriCount: mode === '4p' ? 0 : prev.nukidoriCount,
+    }));
+  }, []);
 
   const setPlayerPosition = useCallback((pos: PlayerPosition) => {
     setSituation((prev) => ({ ...prev, playerPosition: pos }));
@@ -149,12 +165,18 @@ export function useSituation(): UseSituationReturn {
     setSituation((prev) => ({ ...prev, honba: clamped }));
   }, []);
 
+  const setNukidoriCount = useCallback((count: number) => {
+    const clamped = Math.max(0, Math.min(MAX_NUKIDORI, count));
+    setSituation((prev) => ({ ...prev, nukidoriCount: clamped }));
+  }, []);
+
   const resetSituation = useCallback(() => {
     setSituation(DEFAULT_SITUATION);
   }, []);
 
   return {
     situation,
+    setGameMode,
     setPlayerPosition,
     setRoundWind,
     setSeatWind,
@@ -168,6 +190,7 @@ export function useSituation(): UseSituationReturn {
     addUraDoraIndicator,
     removeUraDoraIndicator,
     setHonba,
+    setNukidoriCount,
     resetSituation,
   };
 }

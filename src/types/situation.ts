@@ -4,14 +4,19 @@ export type PlayerPosition = 'dealer' | 'non-dealer';
 // 場風
 export type RoundWind = 'east' | 'south';
 
-// 自風
+// 自風（4人麻雀: east/south/west/north, 三人麻雀: east/south/west）
 export type SeatWind = 'east' | 'south' | 'west' | 'north';
+
+// ゲームモード
+export type GameMode = '4p' | '3p';
 
 // ドラ表示牌（牌IDで管理）
 export type DoraIndicator = string; // e.g., "man5", "wind1"
 
 // 状況設定
 export interface SituationState {
+  // ゲームモード（4人麻雀 or 三人麻雀）
+  gameMode: GameMode;
   playerPosition: PlayerPosition;
   roundWind: RoundWind;
   seatWind: SeatWind;
@@ -26,6 +31,8 @@ export interface SituationState {
   uraDoraIndicators: DoraIndicator[]; // 裏ドラ表示牌（最大4枚）
   // 本場数（0〜10）
   honba: number;
+  // 三人麻雀: 抜き北の枚数（0〜4）
+  nukidoriCount: number;
 }
 
 // 実ドラ情報
@@ -37,6 +44,7 @@ export interface DoraInfo {
 }
 
 export const DEFAULT_SITUATION: SituationState = {
+  gameMode: '4p',
   playerPosition: 'non-dealer',
   roundWind: 'east',
   seatWind: 'east',
@@ -48,8 +56,10 @@ export const DEFAULT_SITUATION: SituationState = {
   isHoutei: false,
   uraDoraIndicators: [],
   honba: 0,
+  nukidoriCount: 0,
 };
 
 export const MAX_DORA_INDICATORS = 4;
 export const MAX_URA_DORA_INDICATORS = 4;
 export const MAX_HONBA = 10;
+export const MAX_NUKIDORI = 4;
