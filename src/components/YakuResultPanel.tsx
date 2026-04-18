@@ -355,9 +355,9 @@ const ScoreView: React.FC<{
           {scoreResult.total.toLocaleString()}点
         </span>
       </div>
-      {/* 支払い内訳 */}
-      {scoreResult.payments.length > 1 && (
-        <div className="flex gap-3 text-xs text-gray-600">
+      {/* 支払い内訳（ツモ・嶺上は常に表示） */}
+      {mode !== 'ron' && scoreResult.payments.length > 0 && (
+        <div className="flex flex-wrap gap-3 text-xs text-gray-600">
           {scoreResult.payments.map((p, i) => (
             <span key={i}>
               {p.label}: <span className="font-semibold">{p.amount.toLocaleString()}点</span>

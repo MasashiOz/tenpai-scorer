@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { TILE_SVG } from '@/data/tiles';
 
 interface HelpModalProps {
   isOpen: boolean;
@@ -162,41 +163,42 @@ const Step: React.FC<{ number: number; title: string; children: React.ReactNode 
 
 const TilesTab: React.FC = () => (
   <div className="space-y-4">
-    <TileGroup
+    <SvgTileGroup
       title="萬子（マンズ）"
       color="text-red-700"
       description="漢数字1〜9が書かれた赤系の牌。「1萬」「9萬」が幺九牌（ヤオチュー牌）。"
-      tiles={['1', '2', '3', '4', '5', '6', '7', '8', '9']}
-      suffix="萬"
+      tileIds={['man1','man2','man3','man4','man5','man6','man7','man8','man9']}
+      labels={['1萬','2萬','3萬','4萬','5萬','6萬','7萬','8萬','9萬']}
     />
-    <TileGroup
+    <SvgTileGroup
       title="筒子（ピンズ）"
       color="text-blue-700"
       description="円（筒）の模様が描かれた青系の牌。「1筒」「9筒」が幺九牌。"
-      tiles={['1', '2', '3', '4', '5', '6', '7', '8', '9']}
-      suffix="筒"
+      tileIds={['pin1','pin2','pin3','pin4','pin5','pin6','pin7','pin8','pin9']}
+      labels={['1筒','2筒','3筒','4筒','5筒','6筒','7筒','8筒','9筒']}
     />
-    <TileGroup
+    <SvgTileGroup
       title="索子（ソーズ）"
       color="text-green-700"
       description="竹の模様が描かれた緑系の牌。「1索」「9索」が幺九牌。"
-      tiles={['1', '2', '3', '4', '5', '6', '7', '8', '9']}
-      suffix="索"
+      tileIds={['sou1','sou2','sou3','sou4','sou5','sou6','sou7','sou8','sou9']}
+      labels={['1索','2索','3索','4索','5索','6索','7索','8索','9索']}
     />
 
     <div>
       <h3 className="text-sm font-bold text-purple-700 mb-1">風牌（カゼパイ）</h3>
       <p className="text-xs text-gray-600 mb-2">東・南・西・北の4種。字牌で幺九牌。場風・自風と一致すると役牌になる。</p>
-      <div className="flex gap-2 text-xs">
+      <div className="flex gap-2">
         {[
-          { label: '東', note: '東1' },
-          { label: '南', note: '東2 / 南1' },
-          { label: '西', note: '南2' },
-          { label: '北', note: '南2' },
-        ].map(({ label, note }) => (
-          <div key={label} className="bg-purple-50 border border-purple-300 rounded px-2 py-1 text-center">
-            <div className="font-bold text-purple-700">{label}</div>
-            <div className="text-purple-500 text-xs">{note}</div>
+          { id: 'wind1', label: '東' },
+          { id: 'wind2', label: '南' },
+          { id: 'wind3', label: '西' },
+          { id: 'wind4', label: '北' },
+        ].map(({ id, label }) => (
+          <div key={id} className="flex flex-col items-center gap-0.5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={TILE_SVG[id]} alt={label} className="w-9 h-12 object-contain border border-gray-200 rounded shadow-sm" />
+            <span className="text-xs text-gray-500">{label}</span>
           </div>
         ))}
       </div>
@@ -205,24 +207,29 @@ const TilesTab: React.FC = () => (
     <div>
       <h3 className="text-sm font-bold text-yellow-700 mb-1">三元牌（サンゲンパイ）</h3>
       <p className="text-xs text-gray-600 mb-2">白・發・中の3種。字牌で幺九牌。刻子（3枚同じ）にすると役牌になる。</p>
-      <div className="flex gap-2 text-xs">
-        <div className="bg-gray-50 border border-gray-300 rounded px-2 py-1 text-center">
-          <div className="font-bold text-gray-500">白</div>
-          <div className="text-gray-400 text-xs">ハク</div>
-        </div>
-        <div className="bg-yellow-50 border border-yellow-400 rounded px-2 py-1 text-center">
-          <div className="font-bold text-green-600">發</div>
-          <div className="text-yellow-600 text-xs">ハツ</div>
-        </div>
-        <div className="bg-yellow-50 border border-yellow-400 rounded px-2 py-1 text-center">
-          <div className="font-bold text-red-600">中</div>
-          <div className="text-yellow-600 text-xs">チュン</div>
-        </div>
+      <div className="flex gap-2">
+        {[
+          { id: 'dragon1', label: '白' },
+          { id: 'dragon2', label: '發' },
+          { id: 'dragon3', label: '中' },
+        ].map(({ id, label }) => (
+          <div key={id} className="flex flex-col items-center gap-0.5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={TILE_SVG[id]} alt={label} className="w-9 h-12 object-contain border border-gray-200 rounded shadow-sm" />
+            <span className="text-xs text-gray-500">{label}</span>
+          </div>
+        ))}
       </div>
     </div>
 
     <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
       <p className="text-sm font-semibold text-orange-700 mb-1">赤ドラについて</p>
+      <div className="flex items-center gap-3 mb-2">
+        {['man5r','pin5r','sou5r'].map((id) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img key={id} src={TILE_SVG[id]} alt={id} className="w-8 h-11 object-contain border border-orange-300 rounded shadow-sm" />
+        ))}
+      </div>
       <p className="text-xs text-orange-600">
         5萬・5筒・5索の一部が赤く染められた「赤ドラ」として使用されます。
         赤ドラは手牌に含まれるだけで自動的にドラ1として加算されます。
@@ -232,24 +239,23 @@ const TilesTab: React.FC = () => (
   </div>
 );
 
-const TileGroup: React.FC<{
+const SvgTileGroup: React.FC<{
   title: string;
   color: string;
   description: string;
-  tiles: string[];
-  suffix: string;
-}> = ({ title, color, description, tiles, suffix }) => (
+  tileIds: string[];
+  labels: string[];
+}> = ({ title, color, description, tileIds, labels }) => (
   <div>
     <h3 className={`text-sm font-bold ${color} mb-1`}>{title}</h3>
     <p className="text-xs text-gray-600 mb-2">{description}</p>
     <div className="flex flex-wrap gap-1">
-      {tiles.map((n) => (
-        <span
-          key={n}
-          className={`text-xs px-2 py-1 rounded border font-medium ${color} bg-gray-50 border-gray-200`}
-        >
-          {n}{suffix}
-        </span>
+      {tileIds.map((id, i) => (
+        <div key={id} className="flex flex-col items-center gap-0.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={TILE_SVG[id]} alt={labels[i]} className="w-8 h-11 object-contain border border-gray-200 rounded shadow-sm" />
+          <span className="text-xs text-gray-400">{labels[i]}</span>
+        </div>
       ))}
     </div>
   </div>

@@ -27,6 +27,8 @@ export interface UseMeldReturn {
   totalMeldTileCount: number;
   /** 副露が存在するかどうか（門前フラグ用） */
   isOpen: boolean;
+  /** カン副露数（手牌上限+1用） */
+  kanCount: number;
 }
 
 export function useMeld(): UseMeldReturn {
@@ -48,6 +50,7 @@ export function useMeld(): UseMeldReturn {
 
   const totalMeldTileCount = melds.reduce((sum, m) => sum + m.tiles.length, 0);
   const isOpen = melds.some((m) => m.type !== 'ankan');
+  const kanCount = melds.filter((m) => m.type === 'minkan' || m.type === 'ankan' || m.type === 'kakan').length;
 
   const addMeld = useCallback(
     (type: MeldType, tiles: string[]): { success: boolean; reason?: string } => {
@@ -111,5 +114,6 @@ export function useMeld(): UseMeldReturn {
     clearMelds,
     totalMeldTileCount,
     isOpen,
+    kanCount,
   };
 }

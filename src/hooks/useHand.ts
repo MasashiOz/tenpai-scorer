@@ -17,7 +17,9 @@ export interface UseHandReturn {
 
 let nextHandIndex = 0;
 
-export function useHand(meldTileCount: number = 0): UseHandReturn {
+export function useHand(meldTileCount: number = 0, kanCount: number = 0): UseHandReturn {
+  // 手牌上限: 基本13枚、カン1回につき+1（カン後に嶺上牌をツモるため）
+  const maxHandTotal = 13 + kanCount;
   // Sprint 9: LocalStorage で手牌を永続化
   const [hand, setHand] = useLocalStorage<HandTile[]>('tenpai-scorer-hand', []);
 
@@ -50,19 +52,19 @@ export function useHand(meldTileCount: number = 0): UseHandReturn {
 
   const canAddTile = useCallback(
     (tileId: string): boolean => {
-      // 手牌 + 副露牌の合計が MAX_HAND_SIZE を超えないようにする
-      if (hand.length + meldTileCount >= MAX_HAND_SIZE) return false;
+      // 手牌 + 副露牌の合計が上限を超えないようにする（カン数に応じて上限UP）
+      if (hand.length + meldTileCount >= maxHandTotal) return false;
       // Sprint 8: 赤ドラは同一基底IDの合計枚数で判定（man5 + man5r の合計が4枚まで）
       if (getBaseTileCount(tileId) >= MAX_TILE_COUNT) return false;
       return true;
     },
-    [hand.length, meldTileCount, getBaseTileCount]
+    [hand.length, meldTileCount, maxHandTotal, getBaseTileCount]
   );
 
   const addTile = useCallback(
     (tileId: string, suit: string, number: number): { success: boolean; reason?: string } => {
-      if (hand.length + meldTileCount >= MAX_HAND_SIZE) {
-        return { success: false, reason: `手牌は最大${MAX_HAND_SIZE}枚までです` };
+      if (hand.length + meldTileCount >= maxHandTotal) {
+        return { success: false, reason: `手牌は最大${maxHandTotal}枚までです` };
       }
       // Sprint 8: 赤ドラは同一基底IDの合計枚数で判定
       if (getBaseTileCount(tileId) >= MAX_TILE_COUNT) {

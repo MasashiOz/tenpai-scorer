@@ -27,9 +27,10 @@ export default function Home() {
     clearMelds,
     totalMeldTileCount,
     isOpen,
+    kanCount,
   } = useMeld();
 
-  const { hand, addTile, removeTile, clearHand, getTileCount, canAddTile } = useHand(totalMeldTileCount);
+  const { hand, addTile, removeTile, clearHand, getTileCount, canAddTile } = useHand(totalMeldTileCount, kanCount);
   const {
     situation,
     setGameMode,
@@ -116,10 +117,8 @@ export default function Home() {
     showToast('全てリセットしました', 'success', 2000);
   }, [clearHand, clearMelds, resetSituation, clearResult, showToast]);
 
-  // 副露がある場合はさらに追加可能かを確認
-  const canAddMeld = (hand.length + totalMeldTileCount) < 14 &&
-    melds.length < 4 &&
-    hand.length >= 3;
+  // 副露追加可否: カン数に応じた上限チェック（カン1回につき+1）
+  const canAddMeld = melds.length < 4;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -143,7 +142,6 @@ export default function Home() {
           onAddUraDoraIndicator={addUraDoraIndicator}
           onRemoveUraDoraIndicator={removeUraDoraIndicator}
           onHonbaChange={setHonba}
-          onNukidoriCountChange={setNukidoriCount}
           onReset={resetSituation}
           isOpen={isOpen}
         />
@@ -163,6 +161,9 @@ export default function Home() {
           onAddMeld={handleMeldAdd}
           onRemoveMeld={handleMeldRemove}
           canAddMeld={canAddMeld}
+          is3P={situation.gameMode === '3p'}
+          nukidoriCount={situation.nukidoriCount}
+          onNukidoriCountChange={setNukidoriCount}
         />
 
         {/* 牌パレット */}

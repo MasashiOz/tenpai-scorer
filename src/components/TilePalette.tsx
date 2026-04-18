@@ -41,7 +41,7 @@ export const TilePalette: React.FC<TilePaletteProps> = ({
             <div className="text-xs text-gray-400 mb-1">
               {SUIT_LABELS[suit]}
               {is3P && suit === 'man' && (
-                <span className="ml-1 text-gray-300">（2〜8は三人麻雀では不使用）</span>
+                <span className="ml-1 text-gray-400">（2〜8は三人麻雀で不使用）</span>
               )}
             </div>
             <div className="flex flex-wrap gap-1">

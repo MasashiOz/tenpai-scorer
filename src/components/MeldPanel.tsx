@@ -11,8 +11,12 @@ interface MeldPanelProps {
   melds: Meld[];
   onAddMeld: (type: MeldType, tiles: string[]) => { success: boolean; reason?: string };
   onRemoveMeld: (id: string) => void;
-  /** 残り使用可能枚数（副露追加可能かどうかの判定用） */
   canAddMeld: boolean;
+  /** 三人麻雀モード（抜き北UIを表示） */
+  is3P?: boolean;
+  /** 抜き北枚数 */
+  nukidoriCount?: number;
+  onNukidoriCountChange?: (count: number) => void;
 }
 
 // 副露タイプのボタン設定
@@ -115,7 +119,11 @@ export const MeldPanel: React.FC<MeldPanelProps> = ({
   onAddMeld,
   onRemoveMeld,
   canAddMeld,
+  is3P = false,
+  nukidoriCount = 0,
+  onNukidoriCountChange,
 }) => {
+  const MAX_NUKIDORI = 4;
   const [activeMeldType, setActiveMeldType] = useState<MeldType | null>(null);
   const [selectedTiles, setSelectedTiles] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -137,9 +145,17 @@ export const MeldPanel: React.FC<MeldPanelProps> = ({
 
   const handleTileClick = (tileId: string) => {
     if (!activeMeldType) return;
-    if (selectedTiles.length >= requiredCount) return;
 
-    const newSelected = [...selectedTiles, tileId];
+    let newSelected: string[];
+    if (activeMeldType === 'chi') {
+      // チー: 1枚ずつ選択
+      if (selectedTiles.length >= requiredCount) return;
+      newSelected = [...selectedTiles, tileId];
+    } else {
+      // ポン・槓: 1枚選択で必要枚数を自動入力
+      newSelected = Array(requiredCount).fill(tileId);
+    }
+
     setSelectedTiles(newSelected);
 
     if (newSelected.length === requiredCount) {
@@ -195,8 +211,48 @@ export const MeldPanel: React.FC<MeldPanelProps> = ({
         </div>
       )}
 
-      {melds.length === 0 && (
+      {melds.length === 0 && !is3P && (
         <div className="text-xs text-gray-400 italic mb-3">副露なし（門前）</div>
+      )}
+      {melds.length === 0 && is3P && nukidoriCount === 0 && (
+        <div className="text-xs text-gray-400 italic mb-3">副露・抜き北なし（門前）</div>
+      )}
+
+      {/* 抜き北（三人麻雀のみ） */}
+      {is3P && (
+        <div className="mb-3 flex items-center gap-3 py-2 px-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+          <span className="text-xs font-semibold text-emerald-700">抜き北</span>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => onNukidoriCountChange?.(nukidoriCount - 1)}
+              disabled={nukidoriCount <= 0}
+              className="w-6 h-6 rounded border-2 border-emerald-300 text-emerald-700 font-bold text-sm flex items-center justify-center hover:border-emerald-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              −
+            </button>
+            <span className="w-6 text-center font-bold text-base text-emerald-800">{nukidoriCount}</span>
+            <button
+              type="button"
+              onClick={() => onNukidoriCountChange?.(nukidoriCount + 1)}
+              disabled={nukidoriCount >= MAX_NUKIDORI}
+              className="w-6 h-6 rounded border-2 border-emerald-300 text-emerald-700 font-bold text-sm flex items-center justify-center hover:border-emerald-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              ＋
+            </button>
+          </div>
+          <span className="text-xs text-emerald-600">
+            {nukidoriCount > 0 ? `+${nukidoriCount}翻` : '（0〜4枚）'}
+          </span>
+          {nukidoriCount > 0 && (
+            <div className="flex gap-0.5 ml-1">
+              {Array.from({ length: nukidoriCount }).map((_, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={i} src="/tiles/Pei.svg" alt="北" className="w-5 h-7 object-contain" />
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {/* 副露追加ボタン */}
