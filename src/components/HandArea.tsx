@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { HandTile } from '@/types/tile';
-import { MAX_HAND_SIZE, TILE_LABELS } from '@/data/tiles';
+import { TILE_LABELS } from '@/data/tiles';
 import { TileButton } from './TileButton';
 import { getTileById } from '@/data/tiles';
 import { Meld, MELD_TYPE_LABELS } from '@/types/meld';
@@ -13,6 +13,8 @@ interface HandAreaProps {
   onClear: () => void;
   melds?: Meld[];
   meldTileCount?: number;
+  /** カン副露回数（手牌上限 = 13 + kanCount） */
+  kanCount?: number;
 }
 
 function getMeldColor(type: Meld['type']): string {
@@ -31,9 +33,12 @@ export const HandArea: React.FC<HandAreaProps> = ({
   onClear,
   melds = [],
   meldTileCount = 0,
+  kanCount = 0,
 }) => {
+  // 手牌上限: 基本13枚、カン1回につき+1（最大17枚: 4カン時）
+  const maxHandSize = 13 + kanCount;
   const totalTiles = hand.length + meldTileCount;
-  const remaining = MAX_HAND_SIZE - totalTiles;
+  const remaining = maxHandSize - totalTiles;
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
@@ -42,11 +47,11 @@ export const HandArea: React.FC<HandAreaProps> = ({
           <h2 className="text-sm font-semibold text-gray-600">手牌</h2>
           <span
             className={`text-xs px-2 py-0.5 rounded-full font-medium
-              ${totalTiles === MAX_HAND_SIZE
+              ${totalTiles >= maxHandSize
                 ? 'bg-orange-100 text-orange-700'
                 : 'bg-gray-100 text-gray-500'}`}
           >
-            {totalTiles}/{MAX_HAND_SIZE}枚
+            {totalTiles}/{maxHandSize}枚
           </span>
           {melds.length > 0 && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-600 font-medium">
@@ -141,8 +146,8 @@ export const HandArea: React.FC<HandAreaProps> = ({
       {/* 残り枚数・満杯メッセージ */}
       {totalTiles > 0 && (
         <p className="mt-2 text-xs text-gray-400">
-          {totalTiles === MAX_HAND_SIZE
-            ? '手牌が満杯です（最大14枚）'
+          {totalTiles >= maxHandSize
+            ? `手牌が満杯です（最大${maxHandSize}枚）`
             : `あと${remaining}枚追加できます`}
         </p>
       )}

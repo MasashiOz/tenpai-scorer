@@ -153,6 +153,7 @@ export default function Home() {
           onClear={handleClearHand}
           melds={melds}
           meldTileCount={totalMeldTileCount}
+          kanCount={kanCount}
         />
 
         {/* 副露入力パネル */}

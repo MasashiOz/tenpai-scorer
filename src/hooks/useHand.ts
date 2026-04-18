@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { HandTile } from '@/types/tile';
-import { MAX_TILE_COUNT, MAX_HAND_SIZE, getAkaDoraBaseId } from '@/data/tiles';
+import { MAX_TILE_COUNT, getAkaDoraBaseId } from '@/data/tiles';
 import { useLocalStorage } from './useLocalStorage';
 
 export interface UseHandReturn {
@@ -17,13 +17,28 @@ export interface UseHandReturn {
 
 let nextHandIndex = 0;
 
+/**
+ * 手牌管理フック
+ * @param meldTileCount 副露牌の合計枚数
+ * @param kanCount      カン副露の回数（1回につき上限+1）
+ *
+ * 手牌上限 = 13 + kanCount
+ *   門前（カンなし）: 最大13枚
+ *   カン1回: 最大10枚（嶺上牌分+1で合計14枚相当）
+ *   カン2回: 最大7枚（合計15枚相当）
+ *   カン3回: 最大4枚（合計16枚相当）
+ *   カン4回: 最大1枚（合計17枚相当）
+ */
 export function useHand(meldTileCount: number = 0, kanCount: number = 0): UseHandReturn {
-  // 手牌上限: 基本13枚、カン1回につき+1（カン後に嶺上牌をツモるため）
-  const maxHandTotal = 13 + kanCount;
-  // Sprint 9: LocalStorage で手牌を永続化
   const [hand, setHand] = useLocalStorage<HandTile[]>('tenpai-scorer-hand', []);
 
-  // リストア時にnextHandIndexを最大値より大きい値に設定（重複防止）
+  // ref で常に最新値を保持 — stale closure を完全に回避
+  const meldTileCountRef = useRef(meldTileCount);
+  const kanCountRef = useRef(kanCount);
+  meldTileCountRef.current = meldTileCount;
+  kanCountRef.current = kanCount;
+
+  // リストア時に nextHandIndex を最大値より大きい値に設定（重複防止）
   const initialized = useRef(false);
   useEffect(() => {
     if (!initialized.current && hand.length > 0) {
@@ -38,10 +53,6 @@ export function useHand(meldTileCount: number = 0, kanCount: number = 0): UseHan
     [hand]
   );
 
-  /**
-   * Sprint 8: 同一基底IDの牌枚数を返す。
-   * 例: man5rを追加しようとするとき、man5とman5rの合計枚数が MAX_TILE_COUNT 未満であることを確認
-   */
   const getBaseTileCount = useCallback(
     (tileId: string): number => {
       const baseId = getAkaDoraBaseId(tileId);
@@ -50,23 +61,30 @@ export function useHand(meldTileCount: number = 0, kanCount: number = 0): UseHan
     [hand]
   );
 
+  /**
+   * 追加可否チェック。
+   * ref.current で最新の meldTileCount / kanCount を参照するため stale closure なし。
+   */
   const canAddTile = useCallback(
     (tileId: string): boolean => {
-      // 手牌 + 副露牌の合計が上限を超えないようにする（カン数に応じて上限UP）
-      if (hand.length + meldTileCount >= maxHandTotal) return false;
-      // Sprint 8: 赤ドラは同一基底IDの合計枚数で判定（man5 + man5r の合計が4枚まで）
+      const maxHandTotal = 13 + kanCountRef.current;
+      if (hand.length + meldTileCountRef.current >= maxHandTotal) return false;
       if (getBaseTileCount(tileId) >= MAX_TILE_COUNT) return false;
       return true;
     },
-    [hand.length, meldTileCount, maxHandTotal, getBaseTileCount]
+    [hand, getBaseTileCount]
   );
 
+  /**
+   * 牌を追加する。
+   * ref.current で最新の上限を参照するため stale closure なし。
+   */
   const addTile = useCallback(
     (tileId: string, suit: string, number: number): { success: boolean; reason?: string } => {
-      if (hand.length + meldTileCount >= maxHandTotal) {
+      const maxHandTotal = 13 + kanCountRef.current;
+      if (hand.length + meldTileCountRef.current >= maxHandTotal) {
         return { success: false, reason: `手牌は最大${maxHandTotal}枚までです` };
       }
-      // Sprint 8: 赤ドラは同一基底IDの合計枚数で判定
       if (getBaseTileCount(tileId) >= MAX_TILE_COUNT) {
         return { success: false, reason: `同一牌は最大${MAX_TILE_COUNT}枚までです` };
       }
@@ -79,7 +97,7 @@ export function useHand(meldTileCount: number = 0, kanCount: number = 0): UseHan
       setHand((prev) => [...prev, newTile]);
       return { success: true };
     },
-    [hand.length, getTileCount]
+    [hand, getBaseTileCount]
   );
 
   const removeTile = useCallback((handIndex: number) => {
